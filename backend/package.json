@@ -1,24 +1,27 @@
 {
-  "name": "backend",
+  "name": "disaster-management-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Backend for SE3070 Disaster Management Coordination System",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --coverage --runInBand"
   },
   "keywords": [],
-  "author": "",
+  "author": "Group 022",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^18.0.6",
-    "express": "^5.2.1",
-    "mongoose": "^9.11.0"
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.1"
   },
   "devDependencies": {
-    "jest": "^30.5.2",
-    "mongodb-memory-server": "^11.3.0",
-    "nodemon": "^3.1.14",
-    "supertest": "^7.3.1"
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.2.3",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }
