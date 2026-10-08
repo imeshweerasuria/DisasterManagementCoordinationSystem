@@ -1058,5 +1058,869 @@ describe(
         ).toBe(409);
       }
     );
+        test(
+      'creates sensor reading through API',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings/sensors'
+            )
+            .send({
+              sensorCode:
+                'TEST-SENSOR-01',
+
+              sensorType:
+                'WATER_LEVEL',
+
+              district:
+                'Colombo',
+
+              latitude:
+                6.9271,
+
+              longitude:
+                79.8612,
+
+              value:
+                5.5,
+
+              unit:
+                'm',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(201);
+
+        expect(
+          response.body
+            .sensorReading
+            .sensorCode
+        ).toBe(
+          'TEST-SENSOR-01'
+        );
+      }
+    );
+
+    test(
+      'rejects sensor reading with missing required fields',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings/sensors'
+            )
+            .send({
+              sensorCode:
+                'TEST-SENSOR-02',
+
+              sensorType:
+                'WATER_LEVEL',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects invalid sensor evidence coordinates',
+      async () => {
+        const response =
+          await request(app)
+            .get(
+              '/api/hazard-warnings/sensors/evidence'
+            )
+            .query({
+              latitude:
+                120,
+
+              longitude:
+                250,
+
+              maxDistanceKm:
+                10,
+
+              maxAgeMinutes:
+                60,
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects invalid sensor evidence distance',
+      async () => {
+        const response =
+          await request(app)
+            .get(
+              '/api/hazard-warnings/sensors/evidence'
+            )
+            .query({
+              latitude:
+                6.9271,
+
+              longitude:
+                79.8612,
+
+              maxDistanceKm:
+                0,
+
+              maxAgeMinutes:
+                60,
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects invalid report review decision',
+      async () => {
+        const report =
+          await createReport();
+
+        const response =
+          await request(app)
+            .patch(
+              `/api/hazard-warnings/reports/${report._id}/review`
+            )
+            .send({
+              decision:
+                'APPROVED',
+
+              officerId:
+                'DUTY-OFFICER-001',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects invalid report id during review',
+      async () => {
+        const response =
+          await request(app)
+            .patch(
+              '/api/hazard-warnings/reports/not-a-valid-id/review'
+            )
+            .send({
+              decision:
+                'VERIFIED',
+
+              officerId:
+                'DUTY-OFFICER-001',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'returns 404 when reviewed report does not exist',
+      async () => {
+        const missingId =
+          new mongoose.Types
+            .ObjectId();
+
+        const response =
+          await request(app)
+            .patch(
+              `/api/hazard-warnings/reports/${missingId}/review`
+            )
+            .send({
+              decision:
+                'VERIFIED',
+
+              officerId:
+                'DUTY-OFFICER-001',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(404);
+      }
+    );
+
+    test(
+      'rejects report review without officer id',
+      async () => {
+        const report =
+          await createReport();
+
+        const response =
+          await request(app)
+            .patch(
+              `/api/hazard-warnings/reports/${report._id}/review`
+            )
+            .send({
+              decision:
+                'VERIFIED',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects comparedSensorIds when it is not an array',
+      async () => {
+        const report =
+          await createReport();
+
+        const response =
+          await request(app)
+            .patch(
+              `/api/hazard-warnings/reports/${report._id}/review`
+            )
+            .send({
+              decision:
+                'VERIFIED',
+
+              officerId:
+                'DUTY-OFFICER-001',
+
+              comparedSensorIds:
+                'not-an-array',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'returns verification history for a report',
+      async () => {
+        const report =
+          await createReport();
+
+        await request(app)
+          .patch(
+            `/api/hazard-warnings/reports/${report._id}/review`
+          )
+          .send({
+            decision:
+              'VERIFIED',
+
+            officerId:
+              'DUTY-OFFICER-001',
+
+            remarks:
+              'Confirmed by officer.',
+          });
+
+        const response =
+          await request(app)
+            .get(
+              `/api/hazard-warnings/reports/${report._id}/verification-history`
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(200);
+
+        expect(
+          response.body.count
+        ).toBe(1);
+
+        expect(
+          response.body
+            .logs[0]
+            .decision
+        ).toBe(
+          'VERIFIED'
+        );
+      }
+    );
+
+    test(
+      'rejects invalid warning source type',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceType:
+                  'MANUAL',
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects warning without officer id',
+      async () => {
+        const payload =
+          validWarning();
+
+        delete payload
+          .officerId;
+
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              payload
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects warning message shorter than ten characters',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                message:
+                  'Short',
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects warning with no notification channels',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                channels:
+                  [],
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'rejects unsupported notification channel',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                channels: [
+                  'PUSH',
+                  'EMAIL',
+                ],
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'report based warning requires source report id',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceType:
+                  'REPORT',
+
+                sourceReportId:
+                  null,
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'returns 404 when source report does not exist',
+      async () => {
+        const missingId =
+          new mongoose.Types
+            .ObjectId();
+
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceType:
+                  'REPORT',
+
+                sourceReportId:
+                  missingId
+                    .toString(),
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(404);
+      }
+    );
+
+    test(
+      'verified report without verification log cannot create warning',
+      async () => {
+        const report =
+          await createReport(
+            'VERIFIED'
+          );
+
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceType:
+                  'REPORT',
+
+                sourceReportId:
+                  report._id
+                    .toString(),
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(409);
+      }
+    );
+
+    test(
+      'sensor warning rejects sourceSensorIds that are not an array',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceSensorIds:
+                  'sensor-id',
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'sensor warning rejects invalid sensor object id',
+      async () => {
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceSensorIds: [
+                  'not-a-valid-id',
+                ],
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'sensor warning returns 404 when sensor reading does not exist',
+      async () => {
+        const missingSensorId =
+          new mongoose.Types
+            .ObjectId();
+
+        const response =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning({
+                sourceSensorIds: [
+                  missingSensorId
+                    .toString(),
+                ],
+              })
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(404);
+      }
+    );
+
+    test(
+      'lists created hazard warnings',
+      async () => {
+        await request(app)
+          .post(
+            '/api/hazard-warnings'
+          )
+          .send(
+            validWarning()
+          );
+
+        const response =
+          await request(app)
+            .get(
+              '/api/hazard-warnings'
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(200);
+
+        expect(
+          response.body.count
+        ).toBe(1);
+
+        expect(
+          response.body
+            .warnings
+        ).toHaveLength(1);
+      }
+    );
+
+    test(
+      'gets one warning by id',
+      async () => {
+        const created =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning()
+            );
+
+        const id =
+          created.body
+            .warning
+            ._id;
+
+        const response =
+          await request(app)
+            .get(
+              `/api/hazard-warnings/${id}`
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(200);
+
+        expect(
+          response.body
+            .warning
+            ._id
+        ).toBe(id);
+      }
+    );
+
+    test(
+      'rejects invalid warning id',
+      async () => {
+        const response =
+          await request(app)
+            .get(
+              '/api/hazard-warnings/not-a-valid-id'
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'returns 404 for missing warning',
+      async () => {
+        const missingId =
+          new mongoose.Types
+            .ObjectId();
+
+        const response =
+          await request(app)
+            .get(
+              `/api/hazard-warnings/${missingId}`
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(404);
+      }
+    );
+
+    test(
+      'broadcast rejects missing officer id',
+      async () => {
+        const created =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning()
+            );
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${created.body.warning._id}/broadcast`
+            )
+            .send({
+              confirmed:
+                true,
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'already active warning cannot be broadcast again',
+      async () => {
+        const id =
+          await createAndBroadcast();
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${id}/broadcast`
+            )
+            .send({
+              confirmed:
+                true,
+
+              officerId:
+                'DUTY-OFFICER-001',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(409);
+      }
+    );
+
+    test(
+      'returns delivery history through API',
+      async () => {
+        const id =
+          await createAndBroadcast();
+
+        const response =
+          await request(app)
+            .get(
+              `/api/hazard-warnings/${id}/deliveries`
+            );
+
+        expect(
+          response.statusCode
+        ).toBe(200);
+
+        expect(
+          response.body.count
+        ).toBe(2);
+
+        expect(
+          response.body
+            .deliveries
+        ).toHaveLength(2);
+      }
+    );
+
+    test(
+      'retry failed deliveries requires officer id',
+      async () => {
+        const id =
+          await createAndBroadcast();
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${id}/retry-failed`
+            )
+            .send({});
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'retry returns empty array when no channels failed',
+      async () => {
+        const id =
+          await createAndBroadcast();
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${id}/retry-failed`
+            )
+            .send({
+              officerId:
+                'DUTY-OFFICER-001',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(200);
+
+        expect(
+          response.body
+            .retried
+        ).toHaveLength(0);
+      }
+    );
+
+    test(
+      'rejects invalid lifecycle action',
+      async () => {
+        const id =
+          await createAndBroadcast();
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${id}/lifecycle`
+            )
+            .send({
+              action:
+                'PAUSE',
+
+              officerId:
+                'DUTY-OFFICER-001',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'lifecycle change requires officer id',
+      async () => {
+        const id =
+          await createAndBroadcast();
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${id}/lifecycle`
+            )
+            .send({
+              action:
+                'ESCALATE',
+
+              newSeverity:
+                'CRITICAL',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(400);
+      }
+    );
+
+    test(
+      'draft warning cannot be escalated before broadcast',
+      async () => {
+        const created =
+          await request(app)
+            .post(
+              '/api/hazard-warnings'
+            )
+            .send(
+              validWarning()
+            );
+
+        const response =
+          await request(app)
+            .post(
+              `/api/hazard-warnings/${created.body.warning._id}/lifecycle`
+            )
+            .send({
+              action:
+                'ESCALATE',
+
+              officerId:
+                'DUTY-OFFICER-001',
+
+              newSeverity:
+                'CRITICAL',
+            });
+
+        expect(
+          response.statusCode
+        ).toBe(409);
+      }
+    );
   }
 );
