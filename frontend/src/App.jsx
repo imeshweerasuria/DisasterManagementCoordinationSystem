@@ -16,6 +16,9 @@ import PendingReportsPage
 import WarningManagementPage
   from './pages/WarningManagementPage';
 
+import EmergencyResponsePage
+  from './pages/EmergencyResponsePage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -45,6 +48,13 @@ function App() {
           path="/duty-officer/warnings"
           element={
             <WarningManagementPage />
+          }
+        />
+
+        <Route
+          path="/operations/emergency-response"
+          element={
+            <EmergencyResponsePage />
           }
         />
       </Routes>
