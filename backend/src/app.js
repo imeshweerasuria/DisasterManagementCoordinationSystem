@@ -9,6 +9,11 @@ const hazardReportRoutes =
     './routes/hazardReportRoutes'
   );
 
+const hazardWarningRoutes =
+  require(
+    './routes/hazardWarningRoutes'
+  );
+
 const errorHandler =
   require(
     './middleware/errorHandler'
@@ -47,6 +52,11 @@ app.get(
 app.use(
   '/api/hazard-reports',
   hazardReportRoutes
+);
+
+app.use(
+  '/api/hazard-warnings',
+  hazardWarningRoutes
 );
 
 app.use(
