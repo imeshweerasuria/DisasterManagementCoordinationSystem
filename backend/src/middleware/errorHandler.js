@@ -4,24 +4,35 @@ function errorHandler(
   res,
   next
 ) {
-  console.error(error);
+  console.error(
+    error
+  );
 
   if (
-    error.code === 11000
+    error?.code ===
+    11000
   ) {
-    return res.status(409).json({
-      success: false,
-      message:
-        'Duplicate value detected.',
-    });
+    return res
+      .status(409)
+      .json({
+        success: false,
+        message:
+          'A duplicate record already exists.',
+      });
   }
 
-  res.status(500).json({
-    success: false,
-    message:
-      'An unexpected server error occurred.',
-  });
+  const statusCode =
+    error.statusCode ||
+    500;
+
+  return res
+    .status(statusCode)
+    .json({
+      success: false,
+      message:
+        error.message ||
+        'Internal server error.',
+    });
 }
 
-module.exports =
-  errorHandler;
+module.exports = errorHandler;
