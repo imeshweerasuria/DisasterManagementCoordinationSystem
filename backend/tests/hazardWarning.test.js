@@ -1,6 +1,8 @@
 const mongoose =
   require('mongoose');
 
+  const DisasterEvent = require('../src/models/DisasterEvent');
+
 const request =
   require('supertest');
 
@@ -35,6 +37,21 @@ const NotificationDelivery =
 jest.setTimeout(
   30000
 );
+
+let activeEventId;
+
+beforeEach(async () => {
+  const event = await DisasterEvent.create({
+    eventCode: `TEST-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    name: 'Test Flood Disaster',
+    district: 'Colombo',
+    hazardType: 'FLOODING',
+    startDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    status: 'ACTIVE',
+  });
+
+  activeEventId = event._id.toString();
+});
 
 beforeAll(
   async () => {
@@ -86,6 +103,7 @@ function validWarning(
   overrides = {}
 ) {
   return {
+    eventId: activeEventId,
     sourceType:
       'SENSOR',
 

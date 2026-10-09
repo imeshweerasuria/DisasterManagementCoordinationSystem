@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const DisasterEvent = require('../models/DisasterEvent');
 const HazardReport = require('../models/HazardReport');
 const SensorReading = require('../models/SensorReading');
 const VerificationLog = require('../models/VerificationLog');
@@ -536,15 +537,12 @@ getVerificationHistory(
     });
 }
 
-async function createWarning(
-  payload
-) {
+async function createWarning(payload) {
   const {
+    eventId = null,
     sourceType,
-    sourceReportId =
-      null,
-    sourceSensorIds =
-      [],
+    sourceReportId = null,
+    sourceSensorIds = [],
     officerId,
     targetZone,
     severity,
@@ -552,70 +550,63 @@ async function createWarning(
     channels,
   } = payload;
 
-  if (
-    ![
-      'REPORT',
-      'SENSOR',
-    ].includes(
-      sourceType
-    )
-  ) {
+  // Validate the selected disaster event.
+  if (!eventId) {
+    throw createHttpError(
+      'eventId is required when creating a hazard warning.'
+    );
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    throw createHttpError('Invalid disaster event ID.');
+  }
+
+  const disasterEvent = await DisasterEvent.findById(eventId);
+
+  if (!disasterEvent) {
+    throw createHttpError('Disaster event was not found.', 404);
+  }
+
+  if (disasterEvent.status !== 'ACTIVE') {
+    throw createHttpError(
+      'Hazard warnings can only be created for active disaster events.',
+      409
+    );
+  }
+
+  if (!['REPORT', 'SENSOR'].includes(sourceType)) {
     throw createHttpError(
       'sourceType must be REPORT or SENSOR.'
     );
   }
 
-  if (
-    !officerId ||
-    !String(
-      officerId
-    ).trim()
-  ) {
-    throw createHttpError(
-      'officerId is required.'
-    );
+  if (!officerId || !String(officerId).trim()) {
+    throw createHttpError('officerId is required.');
   }
 
-  validateTargetZone(
-    targetZone
-  );
+  validateTargetZone(targetZone);
+  validateSeverity(severity);
 
-  validateSeverity(
-    severity
-  );
-
-  if (
-    !message ||
-    String(
-      message
-    ).trim().length < 10
-  ) {
+  if (!message || String(message).trim().length < 10) {
     throw createHttpError(
       'Warning message must contain at least 10 characters.'
     );
   }
 
-  const cleanChannels =
-    validateChannels(
-      channels
-    );
+  const cleanChannels = validateChannels(channels);
 
-  if (
-    sourceType ===
-    'REPORT'
-  ) {
-    if (
-      !sourceReportId
-    ) {
+  if (sourceType === 'REPORT') {
+    if (!sourceReportId) {
       throw createHttpError(
         'sourceReportId is required for a report-based warning.'
       );
     }
 
-    const report =
-      await HazardReport.findById(
-        sourceReportId
-      );
+    if (!mongoose.Types.ObjectId.isValid(sourceReportId)) {
+      throw createHttpError('Invalid source report ID.');
+    }
+
+    const report = await HazardReport.findById(sourceReportId);
 
     if (!report) {
       throw createHttpError(
@@ -624,31 +615,20 @@ async function createWarning(
       );
     }
 
-    if (
-      report.verificationStatus !==
-      'VERIFIED'
-    ) {
+    if (report.verificationStatus !== 'VERIFIED') {
       throw createHttpError(
         'The citizen report must be verified before it can be used for an official warning.',
         409
       );
     }
 
-    const latestLog =
-      await VerificationLog
-        .findOne({
-          reportId:
-            report._id,
-        })
-        .sort({
-          decidedAt: -1,
-        });
+    const latestLog = await VerificationLog.findOne({
+      reportId: report._id,
+    }).sort({
+      decidedAt: -1,
+    });
 
-    if (
-      !latestLog ||
-      latestLog.decision !==
-        'VERIFIED'
-    ) {
+    if (!latestLog || latestLog.decision !== 'VERIFIED') {
       throw createHttpError(
         'The latest verification decision must confirm the report before warning creation.',
         409
@@ -656,54 +636,31 @@ async function createWarning(
     }
   }
 
-  if (
-    sourceType ===
-    'SENSOR'
-  ) {
-    if (
-      !Array.isArray(
-        sourceSensorIds
-      )
-    ) {
+  if (sourceType === 'SENSOR') {
+    if (!Array.isArray(sourceSensorIds)) {
       throw createHttpError(
         'sourceSensorIds must be an array.'
       );
     }
 
-    if (
-      sourceSensorIds.length >
-      0
-    ) {
-      const validIds =
-        sourceSensorIds.filter(
-          (id) =>
-            mongoose.Types
-              .ObjectId
-              .isValid(id)
-        );
+    if (sourceSensorIds.length > 0) {
+      const validIds = sourceSensorIds.filter((id) =>
+        mongoose.Types.ObjectId.isValid(id)
+      );
 
-      if (
-        validIds.length !==
-        sourceSensorIds.length
-      ) {
+      if (validIds.length !== sourceSensorIds.length) {
         throw createHttpError(
           'One or more sensor reading IDs are invalid.'
         );
       }
 
-      const count =
-        await SensorReading
-          .countDocuments({
-            _id: {
-              $in:
-                validIds,
-            },
-          });
+      const count = await SensorReading.countDocuments({
+        _id: {
+          $in: validIds,
+        },
+      });
 
-      if (
-        count !==
-        validIds.length
-      ) {
+      if (count !== validIds.length) {
         throw createHttpError(
           'One or more sensor readings were not found.',
           404
@@ -712,91 +669,51 @@ async function createWarning(
     }
   }
 
-  const warningCode =
-    await generateUniqueWarningCode();
+  const warningCode = await generateUniqueWarningCode();
+
+  const cleanMessage = String(message).trim();
+  const cleanOfficerId = String(officerId).trim();
 
   return HazardWarning.create({
     warningCode,
+    eventId: disasterEvent._id,
 
     sourceType,
 
     sourceReportId:
-      sourceType ===
-      'REPORT'
-        ? sourceReportId
-        : null,
+      sourceType === 'REPORT' ? sourceReportId : null,
 
     sourceSensorIds:
-      sourceType ===
-      'SENSOR'
-        ? sourceSensorIds
-        : [],
+      sourceType === 'SENSOR' ? sourceSensorIds : [],
 
-    officerId:
-      String(
-        officerId
-      ).trim(),
+    officerId: cleanOfficerId,
 
     targetZone: {
-      type:
-        targetZone.type,
-
-      name:
-        String(
-          targetZone.name
-        ).trim(),
+      type: targetZone.type,
+      name: String(targetZone.name).trim(),
     },
 
     severity,
+    message: cleanMessage,
+    channels: cleanChannels,
 
-    message:
-      String(
-        message
-      ).trim(),
-
-    channels:
-      cleanChannels,
-
-    lifecycleStatus:
-      'DRAFT',
+    lifecycleStatus: 'DRAFT',
 
     districtOfficerNotification: {
-      status:
-        'PENDING',
-
-      notifiedAt:
-        null,
+      status: 'PENDING',
+      notifiedAt: null,
     },
 
     lifecycleHistory: [
       {
-        action:
-          'CREATED',
-
-        fromStatus:
-          null,
-
-        toStatus:
-          'DRAFT',
-
-        previousSeverity:
-          null,
-
-        newSeverity:
-          severity,
-
-        message:
-          String(
-            message
-          ).trim(),
-
-        changedBy:
-          String(
-            officerId
-          ).trim(),
-
-        changedAt:
-          new Date(),
+        action: 'CREATED',
+        fromStatus: null,
+        toStatus: 'DRAFT',
+        previousSeverity: null,
+        newSeverity: severity,
+        message: cleanMessage,
+        changedBy: cleanOfficerId,
+        changedAt: new Date(),
       },
     ],
   });
