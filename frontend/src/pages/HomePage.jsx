@@ -93,6 +93,36 @@ export default function HomePage() {
             </Link>
 
             <Link
+              to="/operations/emergency-response"
+              className="home-cta secondary"
+            >
+              <span
+                className="home-cta-icon"
+                aria-hidden="true"
+              >
+                +
+              </span>
+
+              <span className="home-cta-text">
+                <strong>
+                  Emergency Response
+                </strong>
+
+                <small>
+                  Shelters · rescue teams ·
+                  relief allocation
+                </small>
+              </span>
+
+              <span
+                className="home-cta-arrow"
+                aria-hidden="true"
+              >
+                →
+              </span>
+            </Link>
+
+            <Link
               to="/duty-officer/reports"
               className="home-cta secondary"
             >
