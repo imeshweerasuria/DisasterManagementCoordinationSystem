@@ -1,6 +1,5 @@
-import {
-  Link,
-} from 'react-router-dom';
+
+import { Link } from 'react-router-dom';
 
 import './HomePage.css';
 
@@ -31,8 +30,7 @@ export default function HomePage() {
           </div>
 
           <span className="home-badge">
-            SE3070 · Assignment 02 ·
-            Group 022
+            SE3070 · Assignment 02 · Group 022
           </span>
         </header>
 
@@ -49,14 +47,10 @@ export default function HomePage() {
           </h1>
 
           <p className="home-lead">
-            A unified, offline-first
-            platform that lets citizens
-            submit verified ground-level
-            hazard reports — flooding,
-            landslides, blocked roads —
-            and lets duty officers
-            triage, verify and dispatch
-            response from a single
+            A unified, offline-first platform that lets citizens
+            submit verified ground-level hazard reports — flooding,
+            landslides, blocked roads — and lets duty officers
+            triage, verify and dispatch response from a single
             queue.
           </p>
 
@@ -73,21 +67,13 @@ export default function HomePage() {
               </span>
 
               <span className="home-cta-text">
-                <strong>
-                  Submit Ground
-                  Hazard Report
-                </strong>
-
+                <strong>Submit Ground Hazard Report</strong>
                 <small>
-                  Citizen flow · GPS ·
-                  media · offline sync
+                  Citizen flow · GPS · media · offline sync
                 </small>
               </span>
 
-              <span
-                className="home-cta-arrow"
-                aria-hidden="true"
-              >
+              <span className="home-cta-arrow" aria-hidden="true">
                 →
               </span>
             </Link>
@@ -104,20 +90,13 @@ export default function HomePage() {
               </span>
 
               <span className="home-cta-text">
-                <strong>
-                  Emergency Response
-                </strong>
-
+                <strong>Emergency Response</strong>
                 <small>
-                  Shelters · rescue teams ·
-                  relief allocation
+                  Shelters · rescue teams · relief allocation
                 </small>
               </span>
 
-              <span
-                className="home-cta-arrow"
-                aria-hidden="true"
-              >
+              <span className="home-cta-arrow" aria-hidden="true">
                 →
               </span>
             </Link>
@@ -134,20 +113,37 @@ export default function HomePage() {
               </span>
 
               <span className="home-cta-text">
-                <strong>
-                  Duty Officer Queue
-                </strong>
-
+                <strong>Duty Officer Queue</strong>
                 <small>
-                  Verify · triage ·
-                  dispatch reports
+                  Verify · triage · dispatch reports
                 </small>
               </span>
 
+              <span className="home-cta-arrow" aria-hidden="true">
+                →
+              </span>
+            </Link>
+
+            {/* Disaster Analytics */}
+            <Link
+              to="/analytics"
+              className="home-cta secondary"
+            >
               <span
-                className="home-cta-arrow"
+                className="home-cta-icon"
                 aria-hidden="true"
               >
+                ↗
+              </span>
+
+              <span className="home-cta-text">
+                <strong>Disaster Analytics</strong>
+                <small>
+                  Generate reports · Export PDF and CSV
+                </small>
+              </span>
+
+              <span className="home-cta-arrow" aria-hidden="true">
                 →
               </span>
             </Link>
@@ -186,8 +182,7 @@ export default function HomePage() {
             </span>
 
             <strong>
-              Details → Location →
-              Evidence → Review
+              Details → Location → Evidence → Review
             </strong>
           </div>
 
@@ -197,8 +192,7 @@ export default function HomePage() {
             </span>
 
             <strong>
-              Online &amp; Pending Sync
-              supported
+              Online &amp; Pending Sync supported
             </strong>
           </div>
 
@@ -208,16 +202,14 @@ export default function HomePage() {
             </span>
 
             <strong>
-              MERN · React · Node ·
-              MongoDB
+              MERN · React · Node · MongoDB
             </strong>
           </div>
         </section>
 
         <footer className="home-footer">
           <span>
-            SE3070 — Assignment 02
-            Implementation
+            SE3070 — Assignment 02 Implementation
           </span>
 
           <span>
