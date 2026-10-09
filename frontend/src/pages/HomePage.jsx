@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 
 import './HomePage.css';
@@ -102,20 +101,20 @@ export default function HomePage() {
             </Link>
 
             <Link
-              to="/duty-officer/reports"
+              to="/duty-officer/warnings"
               className="home-cta secondary"
             >
               <span
                 className="home-cta-icon"
                 aria-hidden="true"
               >
-                ⌘
+                !
               </span>
 
               <span className="home-cta-text">
-                <strong>Duty Officer Queue</strong>
+                <strong>Duty Officer Hazard Warnings</strong>
                 <small>
-                  Verify · triage · dispatch reports
+                  Review · manage · monitor hazard warnings
                 </small>
               </span>
 
@@ -124,7 +123,6 @@ export default function HomePage() {
               </span>
             </Link>
 
-            {/* Disaster Analytics */}
             <Link
               to="/analytics"
               className="home-cta secondary"
